@@ -2,6 +2,8 @@ package com.fitness.activityservice.services;
 
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import com.fitness.Repository.ActivityRepo;
@@ -21,7 +23,11 @@ public class ActivityServices {
     @Autowired
     private final UserValidationService userValidationService;
 
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
+    @Value("${spring.kafka.topic.name}")
+    private String topicName;
+ 
     public ActivityResponce trackActivity(ActivityRequest request) {
         
         boolean isValid = userValidationService.validateUser(request.getUserId());
@@ -39,6 +45,12 @@ public class ActivityServices {
                 .build();
 
         Activity savedActivity = activityRepo.save(activity);
+
+        try {
+            kafkaTemplate.send(topicName, savedActivity.getUserId(),savedActivity);
+        } catch (Exception e) {
+            System.err.println("Failed to send activity event to Kafka=================================================> " + e.getMessage());
+        }
 
         ActivityResponce responce = new ActivityResponce();
         responce.setUserId(savedActivity.getUserId());
