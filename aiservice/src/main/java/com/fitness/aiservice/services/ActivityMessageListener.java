@@ -14,9 +14,11 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class ActivityMessageListener {
     
+    private final ActivityAiService activityAiService;
 
     @KafkaListener(topics = "${spring.kafka.topic.name}", groupId = "${spring.kafka.consumer.group-id}")
     public void listenActivityEvents(Activity activity) {
         log.info("Received activity event: {}", activity.getUserId());
+        activityAiService.generateRecommendations(activity);
     }
 }
